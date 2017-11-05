@@ -36,6 +36,7 @@ import com.facebook.audiencenetwork.adssample.adunit.BannerFragment;
 import com.facebook.audiencenetwork.adssample.adunit.HorizontalScrollFragment;
 import com.facebook.audiencenetwork.adssample.adunit.InterstitialFragment;
 import com.facebook.audiencenetwork.adssample.adunit.NativeAdFragment;
+import com.facebook.audiencenetwork.adssample.adunit.NativeAdFragment2;
 import com.facebook.audiencenetwork.adssample.adunit.RewardedVideoFragment;
 
 public class MainActivity extends AppCompatActivity {
@@ -87,7 +88,7 @@ public class MainActivity extends AppCompatActivity {
                 fragmentClass = InterstitialFragment.class;
                 break;
             case R.id.nav_native_fragment:
-                fragmentClass = NativeAdFragment.class;
+                fragmentClass = NativeAdFragment2.class;
                 break;
             case R.id.nav_horizontal_scroll_fragment:
                 fragmentClass = HorizontalScrollFragment.class;

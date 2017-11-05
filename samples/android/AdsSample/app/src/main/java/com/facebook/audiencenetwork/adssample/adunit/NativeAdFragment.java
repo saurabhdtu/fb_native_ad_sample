@@ -22,37 +22,46 @@
 
 package com.facebook.audiencenetwork.adssample.adunit;
 
+import android.content.Context;
+import android.content.res.Resources;
+import android.graphics.Point;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.util.DisplayMetrics;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.facebook.ads.Ad;
 import com.facebook.ads.AdChoicesView;
 import com.facebook.ads.AdError;
-import com.facebook.ads.AdListener;
-import com.facebook.ads.MediaView;
 import com.facebook.ads.NativeAd;
+import com.facebook.ads.NativeAdsManager;
 import com.facebook.audiencenetwork.adssample.R;
+import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
-import java.util.List;
 
 public class NativeAdFragment extends Fragment {
-    private NativeAd nativeAd;
+    NativeAdsManager manager;
+    Point point;
     private LinearLayout nativeAdContainer;
     private LinearLayout adView;
 
+    public static int convertDpToPixel(int dp, Context context) {
+        Resources resources = context.getResources();
+        DisplayMetrics metrics = resources.getDisplayMetrics();
+        return dp * (metrics.densityDpi / DisplayMetrics.DENSITY_DEFAULT);
+    }
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        point = new Point();
+        getActivity().getWindowManager().getDefaultDisplay().getSize(point);
     }
 
     @Override
@@ -69,72 +78,63 @@ public class NativeAdFragment extends Fragment {
     }
 
     private void showNativeAd() {
-        nativeAd = new NativeAd(getContext(), "YOUR_PLACEMENT_ID");
-        nativeAd.setAdListener(new AdListener() {
-
+        manager = new NativeAdsManager(getContext(), "758528754283778_1121314754671841", 5);
+        manager.setListener(new NativeAdsManager.Listener() {
             @Override
-            public void onError(Ad ad, AdError error) {
-                // Ad error callback
-            }
+            public void onAdsLoaded() {
+                NativeAd nativeAd = manager.nextNativeAd();
 
-            @Override
-            public void onAdLoaded(Ad ad) {
-
-                // Add the Ad view into the ad container.
                 nativeAdContainer = (LinearLayout) getView().findViewById(R.id.native_ad_container);
-                LayoutInflater inflater = LayoutInflater.from(getActivity());
-                adView = (LinearLayout) inflater.inflate(R.layout.native_ad_layout,
-                        nativeAdContainer, false);
+                LayoutInflater layoutInflater = LayoutInflater.from(getActivity());
+                View adView = layoutInflater.inflate(R.layout.native_ad_layout, nativeAdContainer, false);
+
                 nativeAdContainer.addView(adView);
-
-                // Create native UI using the ad metadata.
-                ImageView nativeAdIcon = (ImageView) adView.findViewById(R.id.native_ad_icon);
-                TextView nativeAdTitle = (TextView) adView.findViewById(R.id.native_ad_title);
-                MediaView nativeAdMedia = (MediaView) adView.findViewById(R.id.native_ad_media);
-                TextView nativeAdSocialContext = (TextView) adView.findViewById(R.id
-                        .native_ad_social_context);
-                TextView nativeAdBody = (TextView) adView.findViewById(R.id.native_ad_body);
-                Button nativeAdCallToAction = (Button) adView.findViewById(R.id
-                        .native_ad_call_to_action);
-
-                // Set the Text.
-                nativeAdTitle.setText(nativeAd.getAdTitle());
-                nativeAdSocialContext.setText(nativeAd.getAdSocialContext());
-                nativeAdBody.setText(nativeAd.getAdBody());
-                nativeAdCallToAction.setText(nativeAd.getAdCallToAction());
-
-                // Download and display the ad icon.
-                NativeAd.Image adIcon = nativeAd.getAdIcon();
-                NativeAd.downloadAndDisplayImage(adIcon, nativeAdIcon);
-
-                // Download and display the cover image.
-                nativeAdMedia.setNativeAd(nativeAd);
-
-                // Add the AdChoices icon
-                LinearLayout adChoicesContainer = (LinearLayout) getView().findViewById(R.id
-                        .ad_choices_container);
-                AdChoicesView adChoicesView = new AdChoicesView(getContext(), nativeAd, true);
+                LinearLayout adChoicesContainer = (LinearLayout) adView.findViewById(R.id.ad_choice_container);
+                AdChoicesView adChoicesView = new AdChoicesView(getActivity(), nativeAd, true);
                 adChoicesContainer.addView(adChoicesView);
+                ImageView imageView = (ImageView) adView.findViewById(R.id.iv_fb_ad_image);
+                ImageView ivAdLogo = (ImageView) adView.findViewById(R.id.iv_ad_logo);
+                TextView tvAdTitle = (TextView) adView.findViewById(R.id.tv_ad_title);
+                TextView tvAdDesc = (TextView) adView.findViewById(R.id.tv_ad_desc);
+                TextView tvAdCta = (TextView) adView.findViewById(R.id.tv_ad_cta);
+                Context context = getActivity();
+                NativeAd.Image image = nativeAd.getAdCoverImage();
+                if (imageView != null && image != null && image.getUrl() != null) {
+                    int width = 0, height = 0;
+                    float ratio = ((float) image.getWidth()) / ((float) point.x);
+                    width = point.x;
+                    height = (int) (image.getHeight() / ratio);
+                    Picasso.with(context)
+                            .load(image.getUrl())
+                            .resize(width, height)
+                            .into(imageView);
+                    NativeAd.downloadAndDisplayImage(nativeAd.getAdIcon(), ivAdLogo);
 
-                // Register the Title and CTA button to listen for clicks.
-                List<View> clickableViews = new ArrayList<>();
-                clickableViews.add(nativeAdTitle);
-                clickableViews.add(nativeAdCallToAction);
-                nativeAd.registerViewForInteraction(nativeAdContainer, clickableViews);
+                    tvAdTitle.setText(nativeAd.getAdTitle());
+                    tvAdDesc.setText(nativeAd.getAdBody());
+                    tvAdCta.setText(nativeAd.getAdCallToAction());
+                    if (adView.getHeight() != height) {
+                        LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) adView.getLayoutParams();
+                        layoutParams.height = height;
+                        adView.setLayoutParams(layoutParams);
+                    }
+                    ArrayList<View> clickables = new ArrayList<>();
+                    clickables.add(ivAdLogo);
+                    clickables.add(imageView);
+                    clickables.add(tvAdTitle);
+                    clickables.add(tvAdCta);
+                    nativeAd.registerViewForInteraction(adView, clickables);
+                }
             }
 
             @Override
-            public void onAdClicked(Ad ad) {
-                // Ad clicked callback
-            }
+            public void onAdError(AdError adError) {
 
-            @Override
-            public void onLoggingImpression(Ad ad) {
-                // On logging impression callback
             }
         });
 
         // Request an ad
-        nativeAd.loadAd();
+        manager.loadAds();
     }
+
 }
