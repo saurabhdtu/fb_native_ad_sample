@@ -32,6 +32,7 @@ import android.util.DisplayMetrics;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -49,7 +50,7 @@ public class NativeAdFragment extends Fragment {
     NativeAdsManager manager;
     Point point;
     private LinearLayout nativeAdContainer;
-    private LinearLayout adView;
+    private View adView;
 
     public static int convertDpToPixel(int dp, Context context) {
         Resources resources = context.getResources();
@@ -67,7 +68,17 @@ public class NativeAdFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_native_ad, container, false);
+        View view =  inflater.inflate(R.layout.fragment_native_ad, container, false);
+        ((Button)view.findViewById(R.id.btn_next_ad)).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if(manager!=null){
+                    NativeAd nativeAd = manager.nextNativeAd();
+                    loadAd(nativeAd);
+                }
+            }
+        });
+        return view;
     }
 
     @Override
@@ -78,53 +89,12 @@ public class NativeAdFragment extends Fragment {
     }
 
     private void showNativeAd() {
-        manager = new NativeAdsManager(getContext(), "758528754283778_1121314754671841", 5);
+        manager = new NativeAdsManager(getContext(), "758528754283778_1121314754671841", 20);
         manager.setListener(new NativeAdsManager.Listener() {
             @Override
             public void onAdsLoaded() {
                 NativeAd nativeAd = manager.nextNativeAd();
-
-                nativeAdContainer = (LinearLayout) getView().findViewById(R.id.native_ad_container);
-                LayoutInflater layoutInflater = LayoutInflater.from(getActivity());
-                View adView = layoutInflater.inflate(R.layout.native_ad_layout, nativeAdContainer, false);
-
-                nativeAdContainer.addView(adView);
-                LinearLayout adChoicesContainer = (LinearLayout) adView.findViewById(R.id.ad_choice_container);
-                AdChoicesView adChoicesView = new AdChoicesView(getActivity(), nativeAd, true);
-                adChoicesContainer.addView(adChoicesView);
-                ImageView imageView = (ImageView) adView.findViewById(R.id.iv_fb_ad_image);
-                ImageView ivAdLogo = (ImageView) adView.findViewById(R.id.iv_ad_logo);
-                TextView tvAdTitle = (TextView) adView.findViewById(R.id.tv_ad_title);
-                TextView tvAdDesc = (TextView) adView.findViewById(R.id.tv_ad_desc);
-                TextView tvAdCta = (TextView) adView.findViewById(R.id.tv_ad_cta);
-                Context context = getActivity();
-                NativeAd.Image image = nativeAd.getAdCoverImage();
-                if (imageView != null && image != null && image.getUrl() != null) {
-                    int width = 0, height = 0;
-                    float ratio = ((float) image.getWidth()) / ((float) point.x);
-                    width = point.x;
-                    height = (int) (image.getHeight() / ratio);
-                    Picasso.with(context)
-                            .load(image.getUrl())
-                            .resize(width, height)
-                            .into(imageView);
-                    NativeAd.downloadAndDisplayImage(nativeAd.getAdIcon(), ivAdLogo);
-
-                    tvAdTitle.setText(nativeAd.getAdTitle());
-                    tvAdDesc.setText(nativeAd.getAdBody());
-                    tvAdCta.setText(nativeAd.getAdCallToAction());
-                    if (adView.getHeight() != height) {
-                        LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) adView.getLayoutParams();
-                        layoutParams.height = height;
-                        adView.setLayoutParams(layoutParams);
-                    }
-                    ArrayList<View> clickables = new ArrayList<>();
-                    clickables.add(ivAdLogo);
-                    clickables.add(imageView);
-                    clickables.add(tvAdTitle);
-                    clickables.add(tvAdCta);
-                    nativeAd.registerViewForInteraction(adView, clickables);
-                }
+                loadAd(nativeAd);
             }
 
             @Override
@@ -135,6 +105,52 @@ public class NativeAdFragment extends Fragment {
 
         // Request an ad
         manager.loadAds();
+    }
+
+    private void loadAd(NativeAd nativeAd){
+        nativeAdContainer = (LinearLayout) getView().findViewById(R.id.native_ad_container);
+        if(nativeAdContainer.findViewById(R.id.ad_parent)==null) {
+            LayoutInflater layoutInflater = LayoutInflater.from(getActivity());
+            adView = layoutInflater.inflate(R.layout.native_ad_layout, nativeAdContainer, false);
+
+            nativeAdContainer.addView(adView);
+            LinearLayout adChoicesContainer = (LinearLayout) adView.findViewById(R.id.ad_choice_container);
+            AdChoicesView adChoicesView = new AdChoicesView(getActivity(), nativeAd, true);
+            adChoicesContainer.addView(adChoicesView);
+        }
+        ImageView imageView = (ImageView) adView.findViewById(R.id.iv_fb_ad_image);
+        ImageView ivAdLogo = (ImageView) adView.findViewById(R.id.iv_ad_logo);
+        TextView tvAdTitle = (TextView) adView.findViewById(R.id.tv_ad_title);
+        TextView tvAdDesc = (TextView) adView.findViewById(R.id.tv_ad_desc);
+        TextView tvAdCta = (TextView) adView.findViewById(R.id.tv_ad_cta);
+        Context context = getActivity();
+        NativeAd.Image image = nativeAd.getAdCoverImage();
+        if (imageView != null && image != null && image.getUrl() != null) {
+            int width = 0, height = 0;
+            float ratio = ((float) image.getWidth()) / ((float) point.x);
+            width = point.x;
+            height = (int) (image.getHeight() / ratio);
+            Picasso.with(context)
+                    .load(image.getUrl())
+                    .resize(width, height)
+                    .into(imageView);
+            NativeAd.downloadAndDisplayImage(nativeAd.getAdIcon(), ivAdLogo);
+
+            tvAdTitle.setText(nativeAd.getAdTitle());
+            tvAdDesc.setText(nativeAd.getAdBody());
+            tvAdCta.setText(nativeAd.getAdCallToAction());
+            if (adView.getHeight() != height) {
+                LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) adView.getLayoutParams();
+                layoutParams.height = height;
+                adView.setLayoutParams(layoutParams);
+            }
+            ArrayList<View> clickables = new ArrayList<>();
+            clickables.add(ivAdLogo);
+            clickables.add(imageView);
+            clickables.add(tvAdTitle);
+            clickables.add(tvAdCta);
+            nativeAd.registerViewForInteraction(adView, clickables);
+        }
     }
 
 }

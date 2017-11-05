@@ -88,7 +88,7 @@ public class MainActivity extends AppCompatActivity {
                 fragmentClass = InterstitialFragment.class;
                 break;
             case R.id.nav_native_fragment:
-                fragmentClass = NativeAdFragment2.class;
+                fragmentClass = NativeAdFragment.class;
                 break;
             case R.id.nav_horizontal_scroll_fragment:
                 fragmentClass = HorizontalScrollFragment.class;
